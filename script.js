@@ -2,6 +2,8 @@
 
 
 // Do not change code below this line
+// script.js
+
 const questions = [
   {
     question: "What is the capital of France?",
@@ -20,7 +22,7 @@ const questions = [
   },
   {
     question: "Which is the largest planet in our solar system?",
-    choices: ["Earth", "Jupiter", "Mars", "Venus"],
+    choices: ["Earth", "Jupiter", "Mars", "Saturn"],
     answer: "Jupiter",
   },
   {
@@ -30,128 +32,91 @@ const questions = [
   },
 ];
 
-// --- Quiz Logic Starts Here ---
-
 const questionsElement = document.getElementById("questions");
+const submitBtn = document.getElementById("submit");
 const scoreElement = document.getElementById("score");
-const submitButton = document.getElementById("submit");
 
-// 1. Load user progress from session storage, defaulting to an empty array
-let userAnswers = JSON.parse(sessionStorage.getItem("progress")) || [];
-
-/**
- * Saves the selected answer to userAnswers array and updates session storage.
- */
-function saveProgress(event) {
-  const input = event.target;
-  // Get the question index from the custom attribute
-  const questionIndex = parseInt(input.getAttribute('data-q-index')); 
-  const selectedValue = input.value;
-  
-  // Update the answer array
-  userAnswers[questionIndex] = selectedValue;
-  
-  // Save progress to session storage
-  sessionStorage.setItem("progress", JSON.stringify(userAnswers));
+// Load saved progress from sessionStorage or initialize empty array
+let userAnswers = [];
+const savedProgress = sessionStorage.getItem("progress");
+if (savedProgress) {
+  try {
+    userAnswers = JSON.parse(savedProgress);
+  } catch {
+    userAnswers = [];
+  }
+} 
+if (!Array.isArray(userAnswers) || userAnswers.length !== questions.length) {
+  userAnswers = new Array(questions.length).fill(null);
 }
 
-/**
- * Calculates the score, displays it, and saves it to local storage.
- */
-function calculateAndDisplayScore() {
+// Load saved score from localStorage and display if exists
+const savedScore = localStorage.getItem("score");
+if (savedScore !== null) {
+  scoreElement.textContent = `Your score is ${savedScore} out of ${questions.length}.`;
+}
+
+// Render questions and choices
+function renderQuestions() {
+  questionsElement.innerHTML = ""; // Clear previous content
+
+  for (let i = 0; i < questions.length; i++) {
+    const question = questions[i];
+    const questionDiv = document.createElement("div");
+    questionDiv.style.marginBottom = "1em";
+
+    const questionText = document.createElement("p");
+    questionText.textContent = question.question;
+    questionText.style.fontWeight = "bold";
+    questionDiv.appendChild(questionText);
+
+    for (let j = 0; j < question.choices.length; j++) {
+      const choice = question.choices[j];
+
+      const label = document.createElement("label");
+      label.style.display = "block";
+      label.style.cursor = "pointer";
+
+      const choiceInput = document.createElement("input");
+      choiceInput.type = "radio";
+      choiceInput.name = `question-${i}`;
+      choiceInput.value = choice;
+      choiceInput.style.marginRight = "0.5em";
+
+      // Check if this choice was previously selected
+      if (userAnswers[i] === choice) {
+        choiceInput.checked = true;
+      }
+
+      // When user selects an option, update userAnswers and save to sessionStorage
+      choiceInput.addEventListener("change", () => {
+        userAnswers[i] = choiceInput.value;
+        sessionStorage.setItem("progress", JSON.stringify(userAnswers));
+      });
+
+      label.appendChild(choiceInput);
+      label.appendChild(document.createTextNode(choice));
+      questionDiv.appendChild(label);
+    }
+
+    questionsElement.appendChild(questionDiv);
+  }
+}
+
+renderQuestions();
+
+submitBtn.addEventListener("click", () => {
+  // Calculate score based on userAnswers
   let score = 0;
-  const maxScore = questions.length;
-  
-  // Calculate score based on the current userAnswers array
-  for (let i = 0; i < maxScore; i++) {
-    // Edge case handled: If userAnswers[i] is undefined (not answered), it won't match, so score isn't affected.
+  for (let i = 0; i < questions.length; i++) {
     if (userAnswers[i] === questions[i].answer) {
       score++;
     }
   }
 
-  const scoreText = `Your score is ${score} out of ${maxScore}.`;
-  
-  // Display and store the score
-  scoreElement.textContent = scoreText;
-  localStorage.setItem("score", scoreText);
+  // Display score
+  scoreElement.textContent = `Your score is ${score} out of ${questions.length}.`;
 
-  // Disable the form after submission
-  submitButton.disabled = true;
-  document.querySelectorAll('input[type="radio"]').forEach(input => {
-      input.disabled = true;
-  });
-}
-
-/**
- * Checks local storage for a previously submitted score and handles quiz state.
- */
-function checkAndHandleQuizState() {
-    const lastScore = localStorage.getItem("score");
-    if (lastScore) {
-        // If a score exists in Local Storage, display it and disable the quiz
-        scoreElement.textContent = `Last submitted score: ${lastScore}`;
-        submitButton.disabled = true;
-        // The radio buttons will be disabled in renderQuestions if this is true
-        return true; 
-    }
-    return false;
-}
-
-/**
- * Displays the quiz questions, checking for saved progress and current score state.
- */
-function renderQuestions() {
-  questionsElement.innerHTML = '';
-  const quizIsCompleted = checkAndHandleQuizState();
-
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions[i];
-    const questionElement = document.createElement("div");
-    
-    // Question Text
-    const questionText = document.createElement('p');
-    questionText.textContent = `Q${i+1}: ${question.question}`;
-    questionElement.appendChild(questionText);
-
-    for (let j = 0; j < question.choices.length; j++) {
-      const choice = question.choices[j];
-      
-      const labelElement = document.createElement("label");
-      
-      const choiceElement = document.createElement("input");
-      choiceElement.setAttribute("type", "radio");
-      choiceElement.setAttribute("name", `question-${i}`);
-      choiceElement.setAttribute("value", choice);
-      choiceElement.setAttribute("data-q-index", i); // Used by saveProgress
-
-      // 2. Retain selection from session storage
-      if (userAnswers[i] === choice) {
-        choiceElement.setAttribute("checked", true);
-      }
-      
-      // If quiz is completed, disable the inputs
-      if (quizIsCompleted) {
-        choiceElement.disabled = true;
-      }
-      
-      // Add event listener for progress saving
-      choiceElement.addEventListener('change', saveProgress);
-
-      const choiceText = document.createTextNode(choice);
-      
-      labelElement.appendChild(choiceElement);
-      labelElement.appendChild(choiceText);
-      labelElement.appendChild(document.createElement("br")); 
-      
-      questionElement.appendChild(labelElement);
-    }
-    questionsElement.appendChild(questionElement);
-  }
-}
-
-// Attach event listener to the submit button
-submitButton.addEventListener('click', calculateAndDisplayScore);
-
-
-renderQuestions();
+  // Save score to localStorage
+  localStorage.setItem("score", score);
+});
