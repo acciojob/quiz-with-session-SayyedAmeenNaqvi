@@ -1,17 +1,7 @@
 //your JS code here.
 
-// Do not change code below this line
-// This code will just display the questions to the screen
-// your JS code here.
-
-// Select required DOM elements
-// Select required DOM elements
-const questionsElement = document.getElementById("questions");
-const submitBtn = document.getElementById("submit");
-const scoreElement = document.getElementById("score");
 
 // Do not change code below this line
-// This code will just display the questions to the screen
 const questions = [
   {
     question: "What is the capital of France?",
@@ -30,7 +20,7 @@ const questions = [
   },
   {
     question: "Which is the largest planet in our solar system?",
-    choices: ["Earth", "Jupiter", "Mars", "Saturn"],
+    choices: ["Earth", "Jupiter", "Mars", "Venus"],
     answer: "Jupiter",
   },
   {
@@ -40,68 +30,128 @@ const questions = [
   },
 ];
 
+// --- Quiz Logic Starts Here ---
 
+const questionsElement = document.getElementById("questions");
+const scoreElement = document.getElementById("score");
+const submitButton = document.getElementById("submit");
+
+// 1. Load user progress from session storage, defaulting to an empty array
 let userAnswers = JSON.parse(sessionStorage.getItem("progress")) || [];
 
-
-const savedScore = localStorage.getItem("score");
-if (savedScore !== null) {
-  scoreElement.textContent = `Your score is ${savedScore} out of 5.`;
-}
-
-
-function renderQuestions() {
-  questionsElement.innerHTML = ""; // Clear previous contents
-
-  questions.forEach((q, index) => {
-    const questionDiv = document.createElement("div");
-
-    const qText = document.createElement("p");
-    qText.textContent = q.question;
-    questionDiv.appendChild(qText);
-
-    q.choices.forEach((choice) => {
-      const label = document.createElement("label");
-      const radio = document.createElement("input");
-
-      radio.type = "radio";
-      radio.name = `question-${index}`;
-      radio.value = choice;
-
-   
-      if (userAnswers[index] === choice) {
-        radio.checked = true;
-      }
-
+/**
+ * Saves the selected answer to userAnswers array and updates session storage.
+ */
+function saveProgress(event) {
+  const input = event.target;
+  // Get the question index from the custom attribute
+  const questionIndex = parseInt(input.getAttribute('data-q-index')); 
+  const selectedValue = input.value;
   
-      radio.addEventListener("change", () => {
-        userAnswers[index] = choice;
-        sessionStorage.setItem("progress", JSON.stringify(userAnswers));
-      });
+  // Update the answer array
+  userAnswers[questionIndex] = selectedValue;
+  
+  // Save progress to session storage
+  sessionStorage.setItem("progress", JSON.stringify(userAnswers));
+}
 
-      label.appendChild(radio);
-      label.appendChild(document.createTextNode(choice));
-      questionDiv.appendChild(label);
-      questionDiv.appendChild(document.createElement("br"));
-    });
+/**
+ * Calculates the score, displays it, and saves it to local storage.
+ */
+function calculateAndDisplayScore() {
+  let score = 0;
+  const maxScore = questions.length;
+  
+  // Calculate score based on the current userAnswers array
+  for (let i = 0; i < maxScore; i++) {
+    // Edge case handled: If userAnswers[i] is undefined (not answered), it won't match, so score isn't affected.
+    if (userAnswers[i] === questions[i].answer) {
+      score++;
+    }
+  }
 
-    questionsElement.appendChild(questionDiv);
+  const scoreText = `Your score is ${score} out of ${maxScore}.`;
+  
+  // Display and store the score
+  scoreElement.textContent = scoreText;
+  localStorage.setItem("score", scoreText);
+
+  // Disable the form after submission
+  submitButton.disabled = true;
+  document.querySelectorAll('input[type="radio"]').forEach(input => {
+      input.disabled = true;
   });
 }
 
+/**
+ * Checks local storage for a previously submitted score and handles quiz state.
+ */
+function checkAndHandleQuizState() {
+    const lastScore = localStorage.getItem("score");
+    if (lastScore) {
+        // If a score exists in Local Storage, display it and disable the quiz
+        scoreElement.textContent = `Last submitted score: ${lastScore}`;
+        submitButton.disabled = true;
+        // The radio buttons will be disabled in renderQuestions if this is true
+        return true; 
+    }
+    return false;
+}
 
-submitBtn.addEventListener("click", () => {
-  let score = 0;
+/**
+ * Displays the quiz questions, checking for saved progress and current score state.
+ */
+function renderQuestions() {
+  questionsElement.innerHTML = '';
+  const quizIsCompleted = checkAndHandleQuizState();
 
-  questions.forEach((q, index) => {
-    if (userAnswers[index] === q.answer) score++;
-  });
+  for (let i = 0; i < questions.length; i++) {
+    const question = questions[i];
+    const questionElement = document.createElement("div");
+    
+    // Question Text
+    const questionText = document.createElement('p');
+    questionText.textContent = `Q${i+1}: ${question.question}`;
+    questionElement.appendChild(questionText);
 
-  scoreElement.textContent = `Your score is ${score} out of 5.`;
-  localStorage.setItem("score", score);
-});
+    for (let j = 0; j < question.choices.length; j++) {
+      const choice = question.choices[j];
+      
+      const labelElement = document.createElement("label");
+      
+      const choiceElement = document.createElement("input");
+      choiceElement.setAttribute("type", "radio");
+      choiceElement.setAttribute("name", `question-${i}`);
+      choiceElement.setAttribute("value", choice);
+      choiceElement.setAttribute("data-q-index", i); // Used by saveProgress
+
+      // 2. Retain selection from session storage
+      if (userAnswers[i] === choice) {
+        choiceElement.setAttribute("checked", true);
+      }
+      
+      // If quiz is completed, disable the inputs
+      if (quizIsCompleted) {
+        choiceElement.disabled = true;
+      }
+      
+      // Add event listener for progress saving
+      choiceElement.addEventListener('change', saveProgress);
+
+      const choiceText = document.createTextNode(choice);
+      
+      labelElement.appendChild(choiceElement);
+      labelElement.appendChild(choiceText);
+      labelElement.appendChild(document.createElement("br")); 
+      
+      questionElement.appendChild(labelElement);
+    }
+    questionsElement.appendChild(questionElement);
+  }
+}
+
+// Attach event listener to the submit button
+submitButton.addEventListener('click', calculateAndDisplayScore);
 
 
 renderQuestions();
-
-
