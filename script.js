@@ -5,6 +5,7 @@
 // your JS code here.
 
 // Select required DOM elements
+// Select required DOM elements
 const questionsElement = document.getElementById("questions");
 const submitBtn = document.getElementById("submit");
 const scoreElement = document.getElementById("score");
@@ -29,7 +30,7 @@ const questions = [
   },
   {
     question: "Which is the largest planet in our solar system?",
-    choices: ["Earth", "Jupiter", "Mars"],
+    choices: ["Earth", "Jupiter", "Mars", "Saturn"],
     answer: "Jupiter",
   },
   {
@@ -50,55 +51,57 @@ if (savedScore !== null) {
 
 
 function renderQuestions() {
-  questionsElement.innerHTML = ""; 
+  questionsElement.innerHTML = ""; // Clear previous contents
 
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions[i];
-    const questionElement = document.createElement("div");
+  questions.forEach((q, index) => {
+    const questionDiv = document.createElement("div");
 
-    const questionText = document.createElement("p");
-    questionText.textContent = question.question;
-    questionElement.appendChild(questionText);
+    const qText = document.createElement("p");
+    qText.textContent = q.question;
+    questionDiv.appendChild(qText);
 
-    for (let j = 0; j < question.choices.length; j++) {
-      const choice = question.choices[j];
-      const choiceElement = document.createElement("input");
+    q.choices.forEach((choice) => {
+      const label = document.createElement("label");
+      const radio = document.createElement("input");
 
-      choiceElement.setAttribute("type", "radio");
-      choiceElement.setAttribute("name", `question-${i}`);
-      choiceElement.setAttribute("value", choice);
-      if (userAnswers[i] === choice) {
-        choiceElement.checked = true;
+      radio.type = "radio";
+      radio.name = `question-${index}`;
+      radio.value = choice;
+
+   
+      if (userAnswers[index] === choice) {
+        radio.checked = true;
       }
 
-      // On selecting an option, store/update sessionStorage
-      choiceElement.addEventListener("change", function () {
-        userAnswers[i] = choice;
+  
+      radio.addEventListener("change", () => {
+        userAnswers[index] = choice;
         sessionStorage.setItem("progress", JSON.stringify(userAnswers));
       });
 
-      const choiceText = document.createTextNode(choice);
-      questionElement.appendChild(choiceElement);
-      questionElement.appendChild(choiceText);
-      questionElement.appendChild(document.createElement("br"));
-    }
-    questionsElement.appendChild(questionElement);
-  }
+      label.appendChild(radio);
+      label.appendChild(document.createTextNode(choice));
+      questionDiv.appendChild(label);
+      questionDiv.appendChild(document.createElement("br"));
+    });
+
+    questionsElement.appendChild(questionDiv);
+  });
 }
-submitBtn.addEventListener("click", function () {
+
+
+submitBtn.addEventListener("click", () => {
   let score = 0;
 
-  for (let i = 0; i < questions.length; i++) {
-    if (userAnswers[i] === questions[i].answer) {
-      score++;
-    }
-  }
-
+  questions.forEach((q, index) => {
+    if (userAnswers[index] === q.answer) score++;
+  });
 
   scoreElement.textContent = `Your score is ${score} out of 5.`;
-
   localStorage.setItem("score", score);
 });
 
+
 renderQuestions();
+
 
