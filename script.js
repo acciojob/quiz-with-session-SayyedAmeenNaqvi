@@ -5,6 +5,7 @@
  * @returns {Object} An object mapping question index to selected answer, or an empty object.
  */
 function getProgress() {
+	// Retrieves the JSON string and parses it. Returns an empty object if no progress is found.
 	return JSON.parse(sessionStorage.getItem("progress")) || {};
 }
 
@@ -48,15 +49,15 @@ const questions = [
 	},
 ];
 
-// Display the quiz questions and choices, and attach event listeners for progress saving
+// Display the quiz questions and choices
 function renderQuestions() {
 	for (let i = 0; i < questions.length; i++) {
 		const question = questions[i];
 		const questionElement = document.createElement("div");
-        questionElement.style.marginBottom = "15px"; // Optional styling for readability
+        questionElement.style.marginBottom = "15px"; 
 		
         const questionHeader = document.createElement("p");
-        questionHeader.style.fontWeight = "bold"; // Optional styling for readability
+        questionHeader.style.fontWeight = "bold"; 
         questionHeader.textContent = `${i + 1}. ${question.question}`;
 		questionElement.appendChild(questionHeader);
 
@@ -64,16 +65,16 @@ function renderQuestions() {
 			const choice = question.choices[j];
 			
             const label = document.createElement("label");
-            label.style.marginRight = "10px"; // Optional styling for readability
+            label.style.marginRight = "15px"; 
             
 			const choiceElement = document.createElement("input");
 			choiceElement.setAttribute("type", "radio");
-			choiceElement.setAttribute("name", `question-${i}`);
+			choiceElement.setAttribute("name", `question-${i}`); // Unique name per question group
 			choiceElement.setAttribute("value", choice);
 
-            // Event listener to save progress to Session Storage on every answer change
+            // Event listener to save progress to Session Storage on change
 			choiceElement.addEventListener("change", (event) => {
-				userAnswers[i] = event.target.value; // Save the selected value
+				userAnswers[i] = event.target.value; 
 				saveProgress(userAnswers);
 			});
 
@@ -93,6 +94,7 @@ function renderQuestions() {
 	}
 }
 
+// Call the function to display the questions when the script runs
 renderQuestions();
 
 const scoreDisplay = document.getElementById("score");
@@ -102,10 +104,9 @@ const submitButton = document.getElementById("submit");
 submitButton.addEventListener("click", () => {
 	let count = 0;
     
-    // Calculate the score based on the current userAnswers object
+    // Calculate the score
 	for (let i = 0; i < questions.length; i++) {
-        // userAnswers[i] might be undefined if a question was skipped.
-        // We only check for a correct answer.
+        // Compare the user's saved answer to the correct answer
 		if (userAnswers[i] === questions[i].answer) {
 			count++;
 		}
@@ -117,14 +118,12 @@ submitButton.addEventListener("click", () => {
     // Display the score
 	scoreDisplay.textContent = `Your score is ${count} out of ${questions.length}.`;
     
-
+    // Clear session storage progress after submission 
     sessionStorage.removeItem("progress"); 
 });
 
-// Check Local Storage for a previously saved score and display it
+// Check Local Storage for a previously saved score and display it on load
 const savedScore = localStorage.getItem("score");
 if (savedScore !== null) {
 	scoreDisplay.textContent = `Your score is ${savedScore} out of ${questions.length}.`;
 }
-
-// Note: The total number of questions is automatically handled by using questions.length, which is 5.
